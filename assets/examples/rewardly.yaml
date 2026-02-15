@@ -1,25 +1,28 @@
 # QA Patrol - Rewardly Test Plan
-# Real-world example from testing a React Native Web credit card rewards app
-# App: https://rewardly-cyan.vercel.app
+# EXAMPLE template showing a real-world React Native Web test plan structure
+# NOTE: All credentials use ${env.VAR} interpolation - NEVER hardcode secrets
+# This is a TEMPLATE - replace placeholder URLs with your own app URL
 
 app:
-  url: https://rewardly-cyan.vercel.app
+  url: ${APP_URL:-https://your-app.example.com}  # Set APP_URL env var or replace
   name: Rewardly
   stack: expo-web
-  repo_path: ./  # For static analysis
+  repo_path: ./  # For static analysis - YOUR local repo
 
 auth:
   provider: supabase
   login_path: /auth
   dashboard_path: /home
   accounts:
+    # SECURITY: All credentials use ${env.VAR} interpolation
+    # Set these in your local environment - NEVER commit real passwords
     admin:
-      email: ${REWARDLY_ADMIN_EMAIL}
-      password: ${REWARDLY_ADMIN_PASSWORD}
+      email: ${ADMIN_EMAIL}           # Your admin test account email
+      password: ${ADMIN_PASSWORD}     # Your admin test account password
       role: admin
     free:
-      email: ${REWARDLY_FREE_EMAIL}
-      password: ${REWARDLY_FREE_PASSWORD}
+      email: ${FREE_EMAIL}            # Your free-tier test account email
+      password: ${FREE_PASSWORD}      # Your free-tier test account password
       role: free
     guest: true
 

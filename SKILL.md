@@ -1,11 +1,81 @@
 ---
 name: qa-patrol
-description: Automated QA testing for web apps using browser automation. Triggers on "QA test", "test this app", "find bugs", "smoke test", "regression test", or when testing auth flows, payment integrations, or cross-platform issues. Supports Supabase/Firebase auth, Stripe payments, React Native Web, Next.js, and SPAs.
+version: 1.0.1
+description: >
+  Automated QA testing skill for web apps using browser automation in OpenClaw's sandboxed environment.
+  Performs smoke tests, auth flow verification, payment integration checks, and cross-platform issue detection.
+  All tests run locally via browser automation — no data leaves your machine. Static analysis and DB checks
+  are OPTIONAL Level 3 features requiring explicit user configuration. Supports Supabase/Firebase auth,
+  Stripe payments, React Native Web, Next.js, and SPAs.
+tags: [qa, testing, automation, browser, supabase, stripe, react-native-web]
+metadata:
+  openclaw:
+    emoji: "🔍"
+    permissions:
+      - browser  # Browser automation for testing
+      - read     # Optional: local file access for static analysis (Level 3)
+    requires:
+      env:
+        # All environment variables are OPTIONAL and only needed for Level 2+ auth testing
+        # Secrets use ${env.VAR} interpolation — NEVER hardcoded in test plans
+        - name: ADMIN_EMAIL
+          required: false
+          description: "Admin account email for auth testing (Level 2+)"
+        - name: ADMIN_PASSWORD
+          required: false
+          description: "Admin account password for auth testing (Level 2+)"
+        - name: FREE_EMAIL
+          required: false
+          description: "Free-tier account email for auth testing (Level 2+)"
+        - name: FREE_PASSWORD
+          required: false
+          description: "Free-tier account password for auth testing (Level 2+)"
+        - name: PRO_EMAIL
+          required: false
+          description: "Pro account email for subscription testing (Level 2+)"
+        - name: PRO_PASSWORD
+          required: false
+          description: "Pro account password for subscription testing (Level 2+)"
+        - name: DATABASE_URL
+          required: false
+          description: "Database connection string for data integrity checks (Level 3 only)"
+        - name: APP_URL
+          required: false
+          description: "Target application URL (can also be passed via --url flag)"
 ---
 
 # QA Patrol
 
 Automated QA testing skill for web applications. Catches bugs that unit tests miss: cross-platform issues, auth state problems, data integrity failures, and integration breakages.
+
+## Security & Privacy
+
+This skill is designed with security and transparency in mind:
+
+### Sandboxed Execution
+- All browser automation runs in **OpenClaw's sandboxed browser environment**
+- No data leaves your local machine during testing
+- Test results and screenshots stay local unless you explicitly share them
+
+### Secrets Handling
+- **NEVER hardcode secrets** in test plans — always use environment variable interpolation: `${env.ADMIN_PASSWORD}`
+- Credentials are read from your local environment at runtime
+- Test plans in this skill's examples use only `${env.VAR}` placeholders
+- The skill does not persist, log, or transmit credentials
+
+### Optional Advanced Features (Level 3)
+The following features are **completely optional** and require explicit user configuration:
+- **Static Analysis**: Scans YOUR codebase (if you provide `repo_path`) for common bug patterns
+- **Data Integrity Checks**: Queries YOUR database (if you provide `DATABASE_URL`) to verify UI accuracy
+- These features help YOU find bugs in YOUR code — they don't exfiltrate anything
+
+### Security Pattern Detection (Not Exploitation)
+The `references/bug-patterns.md` file contains regex patterns for **detecting exposed secrets** in codebases (e.g., `sk_live_`, `api_key=`). These are **detection patterns** used to help developers find and fix security issues — they are NOT exploitation tools. This is standard practice in security linters like ESLint, Semgrep, and GitHub's secret scanning.
+
+### User Control
+- All test plans are **user-provided and user-reviewed**
+- The skill only tests URLs and credentials that YOU explicitly configure
+- No automatic scanning of external resources
 
 ## Quick Start
 

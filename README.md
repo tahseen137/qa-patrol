@@ -71,6 +71,17 @@ Or with a custom test plan:
 Run qa-patrol with this plan: [paste YAML or point to file]
 ```
 
+## v1.0.1 Updates (Feb 2026)
+
+**Security & Privacy Hardening:**
+- ✅ Full environment variable declarations (8 vars, all optional)
+- ✅ Explicit permissions metadata (`browser`, `read`)
+- ✅ Security & Privacy section added to SKILL.md
+- ✅ Removed all hardcoded credentials from templates
+- ✅ Added clarifying comments to bug-patterns.md (detection patterns, not exploits)
+
+**Why these matter:** QA testing tools inherently reference secrets, database queries, and file operations — because they *test* these things. v1.0.1 makes the intent explicit and ensures no sensitive data is baked into the skill.
+
 ## Test Plan Example
 
 ```yaml

@@ -1,6 +1,11 @@
 # QA Patrol - Stripe Payments Template
 # Level 2: Payment flow testing for Stripe-integrated apps
 # Usage: qa-patrol --plan payments-stripe.yaml --url https://your-app.com
+#
+# SECURITY: All credentials use ${env.VAR} interpolation
+# Test cards are Stripe's PUBLIC test card numbers (not real cards)
+# NEVER use live mode in automated tests
+# Set FREE_EMAIL, FREE_PASSWORD in your environment for auth
 
 app:
   url: ${APP_URL}

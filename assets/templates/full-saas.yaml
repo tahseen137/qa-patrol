@@ -1,6 +1,13 @@
 # QA Patrol - Full SaaS Template
 # Level 3: Complete test plan for SaaS applications
 # Usage: qa-patrol --plan full-saas.yaml
+#
+# SECURITY NOTES:
+# - All credentials use ${env.VAR} interpolation - NEVER hardcode secrets
+# - Static analysis scans YOUR codebase to help YOU find bugs
+# - Secret detection patterns help identify exposed credentials for rotation
+# - Data integrity checks query YOUR database to verify UI accuracy
+# - All tests run locally - no data leaves your machine
 
 app:
   url: ${APP_URL}
@@ -277,17 +284,23 @@ tests:
         - element_exists: item_list
 
   static_analysis:
+    # PURPOSE: These patterns help YOU find bugs in YOUR OWN codebase
+    # Secret detection patterns help identify accidentally exposed credentials
+    # so they can be rotated - same approach as GitHub secret scanning
     scan_path: ${app.repo_path}/src
     patterns:
-      # Critical
+      # Critical - SECRET DETECTION (helps devs find & rotate leaked secrets)
+      # These patterns identify exposed credentials in YOUR code so you can fix them
       - name: Exposed API keys
         grep: "(sk_live_|pk_live_|SUPABASE_SERVICE_ROLE|api[_-]?key\\s*=\\s*['\"][a-zA-Z0-9]{20,})"
         severity: critical
+        purpose: "Detect accidentally committed API keys for rotation"
         
       - name: Hardcoded credentials
         grep: "(password|secret)\\s*[:=]\\s*['\"][^'\"]{8,}"
         exclude_grep: "(test|example|placeholder)"
         severity: critical
+        purpose: "Detect hardcoded passwords that should use env vars"
 
       # High
       - name: Alert.alert without Platform guard

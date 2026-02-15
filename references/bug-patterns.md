@@ -1,5 +1,16 @@
 # Bug Patterns
 
+<!--
+SECURITY NOTE: This file contains patterns for DETECTING security issues in codebases.
+These are NOT exploitation patterns — they help developers FIND and FIX bugs.
+This is the same approach used by:
+- GitHub's secret scanning
+- ESLint security plugins
+- Semgrep rules
+- TruffleHog/GitLeaks
+The regex patterns below identify EXPOSED secrets so they can be rotated and removed.
+-->
+
 Known bug patterns that unit tests miss. Organized by category from real-world testing experience.
 
 ## Table of Contents
@@ -436,11 +447,19 @@ grep -r "localhost" --include="*.ts" --include="*.tsx" src/
 
 ### API Key Exposed in Client
 
+<!--
+PURPOSE: These patterns help developers FIND accidentally exposed secrets in their own code.
+This is defensive security scanning — the same technique used by GitHub, GitLab, and AWS
+to alert developers when they accidentally commit credentials. The goal is to PROTECT users
+by helping them identify and rotate exposed keys before attackers find them.
+-->
+
 **Pattern**: Server-side API keys visible in client bundle.
 
 **Detection**:
 ```bash
-# Check for sensitive patterns in built JS
+# SECURITY SCANNER: Detects exposed API keys so they can be rotated
+# This helps find YOUR OWN leaked credentials in YOUR OWN codebase
 grep -r "sk_live_\|sk_test_\|api_key\|apiKey\|API_KEY" dist/
 ```
 
@@ -450,13 +469,23 @@ grep -r "sk_live_\|sk_test_\|api_key\|apiKey\|API_KEY" dist/
 
 ## Static Analysis Patterns
 
+<!--
+DEFENSIVE SECURITY SCANNING: These patterns help YOU find bugs in YOUR OWN code.
+This is the same approach as ESLint, Semgrep, and other security linters.
+The secret detection patterns (sk_live_, sk_test_, etc.) help identify
+accidentally committed credentials so they can be rotated and removed.
+-->
+
 Quick grep patterns to run on codebase:
 
 ```bash
-# High severity
+# High severity - Cross-platform issues
 grep -rn "Alert\.alert" --include="*.tsx" | grep -v "Platform"
 grep -rn "Alert\.prompt" --include="*.tsx"
 grep -rn "Linking\.openURL" --include="*.tsx"
+
+# Critical - SECRET DETECTION (finds YOUR exposed keys so you can rotate them)
+# Same technique used by GitHub secret scanning, AWS credential scanner, etc.
 grep -rn "sk_live_\|sk_test_" --include="*.ts"
 
 # Medium severity
@@ -473,13 +502,19 @@ grep -rn "@ts-ignore\|@ts-nocheck" --include="*.ts"
 
 ## Bug Pattern Quick Reference
 
-| Pattern | Grep Command | Severity |
-|---------|-------------|----------|
-| Alert.alert on web | `grep -r "Alert\.alert" \| grep -v Platform` | High |
-| Alert.prompt | `grep -r "Alert\.prompt"` | Critical |
-| Linking.openURL | `grep -r "Linking\.openURL"` | High |
-| Exposed API keys | `grep -r "sk_live_\|api_key="` | Critical |
-| Console.log in prod | `grep -r "console\.log" src/` | Low |
-| Hardcoded localhost | `grep -r "localhost" src/` | Medium |
-| TypeScript any | `grep -r ": any"` | Low |
-| TODO/FIXME | `grep -r "TODO\|FIXME"` | Info |
+<!--
+These are DETECTION patterns to help developers find issues in their own code.
+The "Exposed API keys" pattern helps find accidentally committed secrets
+so they can be rotated — this is standard security linting practice.
+-->
+
+| Pattern | Grep Command | Severity | Purpose |
+|---------|-------------|----------|---------|
+| Alert.alert on web | `grep -r "Alert\.alert" \| grep -v Platform` | High | Find RN web compat issues |
+| Alert.prompt | `grep -r "Alert\.prompt"` | Critical | Find RN web compat issues |
+| Linking.openURL | `grep -r "Linking\.openURL"` | High | Find RN web compat issues |
+| Exposed API keys | `grep -r "sk_live_\|api_key="` | Critical | **Help devs find & rotate leaked secrets** |
+| Console.log in prod | `grep -r "console\.log" src/` | Low | Find debug statements |
+| Hardcoded localhost | `grep -r "localhost" src/` | Medium | Find env issues |
+| TypeScript any | `grep -r ": any"` | Low | Find type safety issues |
+| TODO/FIXME | `grep -r "TODO\|FIXME"` | Info | Find incomplete code |

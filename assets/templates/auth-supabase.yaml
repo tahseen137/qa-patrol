@@ -1,6 +1,10 @@
 # QA Patrol - Supabase Auth Template
 # Level 2: Auth flow testing for Supabase-powered apps
 # Usage: qa-patrol --plan auth-supabase.yaml --url https://your-app.com
+#
+# SECURITY: All credentials use ${env.VAR} interpolation
+# Set ADMIN_EMAIL, ADMIN_PASSWORD, FREE_EMAIL, FREE_PASSWORD in your environment
+# NEVER hardcode real credentials in test plans
 
 app:
   url: ${APP_URL}
