@@ -1,8 +1,8 @@
 ---
 name: qa-patrol
-version: 1.0.1
+version: 1.0.2
 description: >
-  Automated QA testing skill for web apps using browser automation in OpenClaw's sandboxed environment.
+  Automated QA testing skill for web apps using local browser automation.
   Performs smoke tests, auth flow verification, payment integration checks, and cross-platform issue detection.
   All tests run locally via browser automation — no data leaves your machine. Static analysis and DB checks
   are OPTIONAL Level 3 features requiring explicit user configuration. Supports Supabase/Firebase auth,
@@ -52,8 +52,9 @@ Automated QA testing skill for web applications. Catches bugs that unit tests mi
 
 This skill is designed with security and transparency in mind:
 
-### Sandboxed Execution
-- All browser automation runs in **OpenClaw's sandboxed browser environment**
+### Local Execution
+- **All tests run locally on your machine. Nothing is sent to external servers. The browser automation uses OpenClaw's built-in browser control — no cloud services involved.**
+- All browser automation runs entirely on your machine
 - No data leaves your local machine during testing
 - Test results and screenshots stay local unless you explicitly share them
 
