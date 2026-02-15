@@ -1,47 +1,11 @@
 ---
 name: qa-patrol
-version: 1.0.2
 description: >
-  Automated QA testing skill for web apps using local browser automation.
-  Performs smoke tests, auth flow verification, payment integration checks, and cross-platform issue detection.
-  All tests run locally via browser automation — no data leaves your machine. Static analysis and DB checks
-  are OPTIONAL Level 3 features requiring explicit user configuration. Supports Supabase/Firebase auth,
-  Stripe payments, React Native Web, Next.js, and SPAs.
-tags: [qa, testing, automation, browser, supabase, stripe, react-native-web]
-metadata:
-  openclaw:
-    emoji: "🔍"
-    permissions:
-      - browser  # Browser automation for testing
-      - read     # Optional: local file access for static analysis (Level 3)
-    requires:
-      env:
-        # All environment variables are OPTIONAL and only needed for Level 2+ auth testing
-        # Secrets use ${env.VAR} interpolation — NEVER hardcoded in test plans
-        - name: ADMIN_EMAIL
-          required: false
-          description: "Admin account email for auth testing (Level 2+)"
-        - name: ADMIN_PASSWORD
-          required: false
-          description: "Admin account password for auth testing (Level 2+)"
-        - name: FREE_EMAIL
-          required: false
-          description: "Free-tier account email for auth testing (Level 2+)"
-        - name: FREE_PASSWORD
-          required: false
-          description: "Free-tier account password for auth testing (Level 2+)"
-        - name: PRO_EMAIL
-          required: false
-          description: "Pro account email for subscription testing (Level 2+)"
-        - name: PRO_PASSWORD
-          required: false
-          description: "Pro account password for subscription testing (Level 2+)"
-        - name: DATABASE_URL
-          required: false
-          description: "Database connection string for data integrity checks (Level 3 only)"
-        - name: APP_URL
-          required: false
-          description: "Target application URL (can also be passed via --url flag)"
+  Automated QA testing for web apps using local browser automation. Runs entirely on your machine —
+  no data leaves, no cloud services, no external servers. Level 1 (smoke tests) needs only a URL.
+  Level 2 (auth/payment testing) uses optional env vars for test credentials. Level 3 (static analysis,
+  DB checks) optionally reads local files and connects to a user-provided database.
+  Supports Supabase/Firebase auth, Stripe payments, React Native Web, Next.js, and SPAs.
 ---
 
 # QA Patrol
@@ -50,13 +14,33 @@ Automated QA testing skill for web applications. Catches bugs that unit tests mi
 
 ## Security & Privacy
 
-This skill is designed with security and transparency in mind:
+**All tests run locally on your machine. Nothing is sent to external servers. The browser automation uses OpenClaw's built-in browser control — no cloud services involved.**
 
-### Local Execution
-- **All tests run locally on your machine. Nothing is sent to external servers. The browser automation uses OpenClaw's built-in browser control — no cloud services involved.**
-- All browser automation runs entirely on your machine
-- No data leaves your local machine during testing
-- Test results and screenshots stay local unless you explicitly share them
+### Permissions by Level
+
+| Level | What it does | Permissions needed | Env vars needed |
+|-------|-------------|-------------------|-----------------|
+| **1 — Smoke** | Loads pages, checks for errors | `browser` only | `APP_URL` (or pass `--url`) |
+| **2 — Auth/Payments** | Tests sign-in, checkout flows | `browser` only | Test account credentials (see below) |
+| **3 — Static Analysis** | Scans local source code for bug patterns | `browser` + `read` | None (uses local `repo_path`) |
+| **3 — DB Integrity** | Compares DB values to UI display | `browser` | `DATABASE_URL` |
+
+**The `read` permission is ONLY needed for Level 3 static analysis.** Level 1 and Level 2 tests use browser automation exclusively. If you only run Level 1/2 tests, the skill never accesses local files.
+
+### Environment Variables (all optional)
+
+| Variable | Required | Used by | Purpose |
+|----------|----------|---------|---------|
+| `APP_URL` | No | Level 1+ | Target app URL (can also use `--url` flag) |
+| `ADMIN_EMAIL` | No | Level 2 | Admin test account email |
+| `ADMIN_PASSWORD` | No | Level 2 | Admin test account password |
+| `FREE_EMAIL` | No | Level 2 | Free-tier test account email |
+| `FREE_PASSWORD` | No | Level 2 | Free-tier test account password |
+| `PRO_EMAIL` | No | Level 2 | Pro test account email |
+| `PRO_PASSWORD` | No | Level 2 | Pro test account password |
+| `DATABASE_URL` | No | Level 3 | DB connection for data integrity checks |
+
+**⚠️ Use test credentials only — never supply production passwords or production DATABASE_URL.**
 
 ### Secrets Handling
 - **NEVER hardcode secrets** in test plans — always use environment variable interpolation: `${env.ADMIN_PASSWORD}`
@@ -64,19 +48,11 @@ This skill is designed with security and transparency in mind:
 - Test plans in this skill's examples use only `${env.VAR}` placeholders
 - The skill does not persist, log, or transmit credentials
 
-### Optional Advanced Features (Level 3)
-The following features are **completely optional** and require explicit user configuration:
-- **Static Analysis**: Scans YOUR codebase (if you provide `repo_path`) for common bug patterns
-- **Data Integrity Checks**: Queries YOUR database (if you provide `DATABASE_URL`) to verify UI accuracy
-- These features help YOU find bugs in YOUR code — they don't exfiltrate anything
-
 ### Security Pattern Detection (Not Exploitation)
 The `references/bug-patterns.md` file contains regex patterns for **detecting exposed secrets** in codebases (e.g., `sk_live_`, `api_key=`). These are **detection patterns** used to help developers find and fix security issues — they are NOT exploitation tools. This is standard practice in security linters like ESLint, Semgrep, and GitHub's secret scanning.
 
-### User Control
-- All test plans are **user-provided and user-reviewed**
-- The skill only tests URLs and credentials that YOU explicitly configure
-- No automatic scanning of external resources
+### No Install Scripts, No Code Files
+This is an **instruction-only skill** — it contains no executable code, no install scripts, and no third-party dependencies. The entire security surface is the SKILL.md instructions and OpenClaw's built-in browser/read capabilities.
 
 ## Quick Start
 
