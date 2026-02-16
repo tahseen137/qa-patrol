@@ -1,0 +1,308 @@
+# Advanced QA Checks: Performance, Accessibility, Mobile, SEO
+# Use after passing basic smoke + auth + payment tests
+# Requires: browser permission only
+
+app:
+  url: https://example.com
+  name: My App
+  stack: nextjs  # or expo-web, spa, static
+
+tests:
+  # Performance Testing
+  performance:
+    - name: Core Web Vitals check
+      navigate: /
+      steps:
+        - wait: { timeMs: 3000 }  # Let page fully load
+        - evaluate:
+            fn: |
+              const perfData = performance.getEntriesByType('navigation')[0];
+              const lcp = perfData.loadEventEnd - perfData.fetchStart;
+              return { lcp, domContentLoaded: perfData.domContentLoadedEventEnd - perfData.fetchStart };
+            capture_as: perf_metrics
+      assert:
+        - value_less_than: { captured: perf_metrics.lcp, max: 2500 }  # LCP < 2.5s
+        - value_less_than: { captured: perf_metrics.domContentLoaded, max: 1500 }  # DOMContentLoaded < 1.5s
+    
+    - name: Bundle size check
+      navigate: /
+      steps:
+        - evaluate:
+            fn: |
+              const resources = performance.getEntriesByType('resource');
+              const jsFiles = resources.filter(r => r.name.endsWith('.js'));
+              const totalSize = jsFiles.reduce((sum, r) => sum + r.transferSize, 0);
+              return { totalJsSize: totalSize, jsFileCount: jsFiles.length };
+            capture_as: bundle_info
+      assert:
+        - value_less_than: { captured: bundle_info.totalJsSize, max: 500000 }  # < 500KB total JS
+    
+    - name: No memory leaks during navigation
+      navigate: /
+      steps:
+        - evaluate:
+            fn: "performance.memory ? performance.memory.usedJSHeapSize : 0"
+            capture_as: initial_heap
+        - navigate: /pricing
+        - wait: { timeMs: 2000 }
+        - navigate: /
+        - wait: { timeMs: 2000 }
+        - evaluate:
+            fn: "performance.memory ? performance.memory.usedJSHeapSize : 0"
+            capture_as: final_heap
+      assert:
+        # Heap should not grow by more than 10MB after navigation
+        - value_difference: { start: initial_heap, end: final_heap, max_increase: 10000000 }
+  
+  # Accessibility Testing
+  accessibility:
+    - name: Page has proper document structure
+      navigate: /
+      assert:
+        - element_exists: "main"
+        - element_exists: "h1"
+        - element_count: { ref: "h1", expected: 1 }  # Should have exactly one h1
+    
+    - name: Forms have associated labels
+      navigate: /contact  # Or any form page
+      steps:
+        - snapshot: { refs: "aria" }
+      assert:
+        # All textbox elements should have accessible names
+        - aria_valid: true
+    
+    - name: Interactive elements keyboard accessible
+      navigate: /
+      steps:
+        - press: { key: "Tab" }
+        - snapshot:
+        - press: { key: "Tab" }
+        - snapshot:
+        - press: { key: "Tab" }
+        - snapshot:
+      assert:
+        # Check that focus is visible (should see focus indicators in snapshots)
+        - no_console_errors: true
+    
+    - name: Images have alt text
+      navigate: /
+      steps:
+        - evaluate:
+            fn: |
+              const images = Array.from(document.querySelectorAll('img'));
+              const missingAlt = images.filter(img => !img.hasAttribute('alt'));
+              return { totalImages: images.length, missingAlt: missingAlt.length };
+            capture_as: img_alt_check
+      assert:
+        - value_equals: { captured: img_alt_check.missingAlt, expected: 0 }
+    
+    - name: Color contrast check (basic)
+      navigate: /
+      steps:
+        - evaluate:
+            fn: |
+              // Basic check: look for light gray text on white background (common issue)
+              const body = document.body;
+              const computedStyle = window.getComputedStyle(body);
+              return {
+                bgColor: computedStyle.backgroundColor,
+                textColor: computedStyle.color
+              };
+            capture_as: colors
+      # Manual review recommended for full WCAG compliance
+  
+  # Mobile Responsiveness
+  mobile:
+    - name: Mobile viewport renders correctly
+      steps:
+        - resize: { width: 375, height: 667 }  # iPhone SE
+        - navigate: /
+        - snapshot:
+        - evaluate:
+            fn: "document.body.scrollWidth"
+            capture_as: body_width
+      assert:
+        - value_less_than: { captured: body_width, max: 400 }  # No horizontal overflow
+        - element_exists: "main"
+        - no_console_errors: true
+    
+    - name: Touch targets are large enough
+      steps:
+        - resize: { width: 375, height: 667 }
+        - navigate: /
+        - evaluate:
+            fn: |
+              const buttons = Array.from(document.querySelectorAll('button, a'));
+              const tooSmall = buttons.filter(btn => {
+                const rect = btn.getBoundingClientRect();
+                return rect.width < 44 || rect.height < 44;
+              });
+              return {
+                totalButtons: buttons.length,
+                tooSmall: tooSmall.length
+              };
+            capture_as: touch_targets
+      assert:
+        # All touch targets should be at least 44x44px
+        - value_equals: { captured: touch_targets.tooSmall, expected: 0 }
+    
+    - name: Viewport meta tag present
+      navigate: /
+      steps:
+        - evaluate:
+            fn: |
+              const viewport = document.querySelector('meta[name="viewport"]');
+              return {
+                exists: !!viewport,
+                content: viewport ? viewport.getAttribute('content') : null
+              };
+            capture_as: viewport_meta
+      assert:
+        - value_equals: { captured: viewport_meta.exists, expected: true }
+        - text_contains: { in: viewport_meta.content, text: "width=device-width" }
+    
+    - name: Tablet viewport test
+      steps:
+        - resize: { width: 768, height: 1024 }  # iPad
+        - navigate: /
+        - snapshot:
+      assert:
+        - element_exists: "main"
+        - no_console_errors: true
+  
+  # SEO Testing
+  seo:
+    - name: Page has proper meta tags
+      navigate: /
+      steps:
+        - evaluate:
+            fn: |
+              return {
+                title: document.title,
+                description: document.querySelector('meta[name="description"]')?.content,
+                ogTitle: document.querySelector('meta[property="og:title"]')?.content,
+                ogDescription: document.querySelector('meta[property="og:description"]')?.content,
+                ogImage: document.querySelector('meta[property="og:image"]')?.content
+              };
+            capture_as: meta_tags
+      assert:
+        - value_exists: { captured: meta_tags.title }
+        - value_exists: { captured: meta_tags.description }
+        - value_length: { captured: meta_tags.description, min: 50, max: 160 }
+    
+    - name: Open Graph tags for social sharing
+      navigate: /
+      steps:
+        - evaluate:
+            fn: |
+              return {
+                ogTitle: !!document.querySelector('meta[property="og:title"]'),
+                ogDescription: !!document.querySelector('meta[property="og:description"]'),
+                ogImage: !!document.querySelector('meta[property="og:image"]'),
+                ogUrl: !!document.querySelector('meta[property="og:url"]')
+              };
+            capture_as: og_tags
+      assert:
+        - value_equals: { captured: og_tags.ogTitle, expected: true }
+        - value_equals: { captured: og_tags.ogDescription, expected: true }
+        - value_equals: { captured: og_tags.ogImage, expected: true }
+    
+    - name: Structured data present
+      navigate: /
+      steps:
+        - evaluate:
+            fn: |
+              const ldJson = Array.from(document.querySelectorAll('script[type="application/ld+json"]'));
+              return {
+                hasStructuredData: ldJson.length > 0,
+                count: ldJson.length
+              };
+            capture_as: structured_data
+      # Optional: Structured data not critical but recommended
+    
+    - name: Internal links are not broken
+      navigate: /
+      steps:
+        - evaluate:
+            fn: |
+              const links = Array.from(document.querySelectorAll('a[href^="/"], a[href^="' + window.location.origin + '"]'));
+              return {
+                internalLinks: links.length,
+                hrefs: links.map(a => a.getAttribute('href')).slice(0, 10)  # First 10 for testing
+              };
+            capture_as: internal_links
+        # Manual verification recommended: test each href for 404s
+    
+    - name: Time to First Byte check
+      navigate: /
+      steps:
+        - evaluate:
+            fn: |
+              const perfData = performance.getEntriesByType('navigation')[0];
+              const ttfb = perfData.responseStart - perfData.requestStart;
+              return { ttfb };
+            capture_as: ttfb
+      assert:
+        - value_less_than: { captured: ttfb, max: 600 }  # TTFB < 600ms
+
+# Static Analysis Patterns (Level 3)
+static_analysis:
+  scan_path: ./src
+  patterns:
+    # Cross-platform
+    - name: Alert.alert without Platform guard
+      grep: "Alert\\.alert"
+      exclude_grep: "Platform\\.OS"
+      severity: high
+      category: cross-platform
+    
+    # Accessibility
+    - name: Images without alt attribute
+      grep: "<img"
+      exclude_grep: 'alt='
+      severity: high
+      category: accessibility
+    
+    - name: Buttons without aria-label or text
+      grep: "<button.*>"
+      exclude_grep: "aria-label=|>\\w"
+      severity: medium
+      category: accessibility
+    
+    # Performance
+    - name: Console.log in production code
+      grep: "console\\.log"
+      exclude_grep: "test|spec|debug"
+      severity: low
+      category: performance
+    
+    - name: Large image imports
+      grep: "import.*\\.(png|jpg|jpeg)"
+      severity: low
+      category: performance
+      fix_hint: "Use next/image or optimize images"
+    
+    # SEO
+    - name: Missing meta description
+      grep: "<meta name=\"description\""
+      invert: true  # Find pages WITHOUT description
+      severity: medium
+      category: seo
+    
+    # Environment
+    - name: Hardcoded API endpoints
+      grep: "https://api\\."
+      exclude_grep: "env\\.|process\\.env"
+      severity: medium
+      category: environment
+
+# Report Configuration
+report:
+  include_screenshots: true
+  include_performance_metrics: true
+  include_accessibility_score: true
+  confidence_weights:
+    performance: 15
+    accessibility: 20
+    mobile: 15
+    seo: 10
